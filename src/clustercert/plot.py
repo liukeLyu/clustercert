@@ -171,23 +171,26 @@ def plot(result, lattice=None, *, further=(), details=False, ax=None, labels=Non
             for end in (0 * v, v):         # thin ticks back to the supercell corners
                 ax.plot(*zip(end + 0.1 * reach * normal, base + end + 0.1 * reach * normal), color=ACCENT,
                         lw=0.7, ls=':')
-            ax.text(*(base + v / 2 + 0.28 * reach * normal), f'$T_{j + 1}$ = {tuple(h[j])}',
-                    color=ACCENT, fontsize=9, ha='center', va='center', rotation=0)
+            # the label grows away from the arrow, so a slanted arrow does not cut through it
+            ha = 'right' if normal[0] < -0.3 else 'left' if normal[0] > 0.3 else 'center'
+            va = 'top' if normal[1] < -0.3 else 'bottom' if normal[1] > 0.3 else 'center'
+            ax.text(*(base + v / 2 + 0.12 * reach * normal), f'$T_{j + 1}$ = {tuple(h[j])}',
+                    color=ACCENT, fontsize=9, ha=ha, va=va, rotation=0)
             tips += [base, base + v, base + v / 2 + 0.5 * reach * normal]
-        # a key for the primitive vectors, below and left of everything drawn
-        drawn = np.vstack([points, *[e for e, _ in images.values()], *corners, *tips])
-        start = drawn.min(0) - 0.3 * reach
-        start[1 if not three_d else 2] -= 1.1 * reach
+        # a key for the primitive vectors, in its own small axes below the legend
+        key = ax.inset_axes([1.04, 0.32, 0.3, 0.35])
         for i, v in enumerate(vec):
-            if three_d:
-                ax.quiver(*start, *v, arrow_length_ratio=0.15, color=INK, lw=1.4)
-            else:
-                ax.annotate('', start + v, start, arrowprops=dict(arrowstyle='-|>', shrinkA=0, shrinkB=0,
-                                                                  color=INK, lw=1.4))
-            ax.text(*(start + 1.18 * v), f'$a_{i + 1}$', color=INK, fontsize=10, ha='center', va='center')
-        ax.text(*(start - 0.12 * reach * np.eye(lattice.dim)[0]), 'primitive\nvectors', color=GREY, fontsize=7,
-                ha='right', va='center')
-        ax.update_datalim(np.vstack([start - 0.6 * reach * np.eye(2)[0], start + vec * 1.25, *tips]))
+            key.annotate('', v, (0, 0), arrowprops=dict(arrowstyle='-|>', shrinkA=0, shrinkB=0, color=INK,
+                                                        lw=1.4))
+            key.text(*(1.18 * v), f'$a_{i + 1}$', color=INK, fontsize=10, ha='center', va='center')
+        key.text(0.5 * reach, -0.3 * reach, 'primitive vectors', color=GREY, fontsize=7, ha='center',
+                 va='top')
+        ends = np.vstack([np.zeros(2), 1.3 * vec, [0, -0.5 * reach], [reach, -0.5 * reach]])
+        key.set_xlim(ends[:, 0].min() - 0.1 * reach, ends[:, 0].max() + 0.1 * reach)
+        key.set_ylim(ends[:, 1].min(), ends[:, 1].max())
+        key.set_aspect('equal')
+        key.axis('off')
+        ax.update_datalim(np.vstack(tips))
         ax.autoscale_view()
 
     n = len(where)
@@ -195,7 +198,7 @@ def plot(result, lattice=None, *, further=(), details=False, ax=None, labels=Non
                if details else f'{lattice.name}, {n} sites, periods {[list(r) for r in h]}')
     ax.set_title(title if title is not None else default, fontsize=10)
     if further or details:
-        ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=8, frameon=False)
+        ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=8, frameon=False, labelspacing=1.2)
     if three_d:
         span = np.ptp(np.vstack([points, *corners]), axis=0)
         ax.set_box_aspect(span)

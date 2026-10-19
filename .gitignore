@@ -1,0 +1,12 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+dist/
+.venv/
+.DS_Store
+
+# Local Claude instructions, never commit
+CLAUDE.md
+.sync/
+*.bundle

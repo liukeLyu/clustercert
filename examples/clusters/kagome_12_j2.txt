@@ -1,0 +1,26 @@
+# Kagome, 12 sites: second-neighbour (J2) bonds of kagome_12.txt in the 2x2 cell
+# 24 bonds; one bond per line
+0 11
+0 5
+0 7
+0 9
+1 10
+1 5
+1 6
+1 8
+10 2
+10 8
+10 9
+11 3
+11 6
+11 7
+2 4
+2 7
+2 9
+3 4
+3 6
+3 8
+4 7
+4 8
+5 6
+5 9

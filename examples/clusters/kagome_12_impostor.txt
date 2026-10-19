@@ -1,0 +1,26 @@
+# Not kagome: 12 sites, 24 bonds, every site has 4 neighbours and lies in two corner-sharing triangles,
+# exactly as in kagome (it is the line graph of the Wagner graph, while kagome is that of honeycomb)
+0 1
+0 2
+0 3
+0 4
+1 2
+1 7
+1 9
+2 8
+2 11
+3 4
+3 5
+3 6
+4 9
+4 10
+5 6
+5 7
+5 8
+6 10
+6 11
+7 8
+7 9
+8 11
+9 10
+10 11

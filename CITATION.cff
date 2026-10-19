@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use clustercert, please cite the software."
+title: "clustercert: certify periodic lattice clusters for exact diagonalization"
+type: software
+authors:
+  - family-names: Lyu
+    given-names: Liuke
+license: MIT
+version: 0.1.0
+keywords:
+  - exact diagonalization
+  - periodic boundary conditions
+  - lattice clusters
+  - graph isomorphism

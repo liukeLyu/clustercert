@@ -21,7 +21,7 @@ def save(name):
     print(f'wrote docs/{name}')
 
 
-cc.symmetry(cc.certify(cc.read_edges(CLUSTERS / 'kagome_12.txt'), 'kagome')).plot(n_up=6)
+cc.symmetry(cc.certify(cc.read_edges(CLUSTERS / 'kagome_36.txt'), 'kagome')).plot(n_up=18)
 save('symmetry_quickstart.png')
 cc.symmetry(cc.certify(cc.read_edges(CLUSTERS / 'kagome_36.txt'), 'kagome')).plot(n_up=18, mosaic=True)
 save('symmetry_mosaic.png')

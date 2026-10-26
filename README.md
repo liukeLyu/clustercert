@@ -6,61 +6,71 @@ Check that a finite graph, such as the bond list of an exact-diagonalization clu
 
 ## Quick start
 
-Suppose someone hands you this 12-site bond list and says it is a kagome cluster with periodic boundary conditions:
+Suppose someone hands you this 36-site bond list and says it is a kagome cluster with periodic boundary conditions:
 
 ```python
 import clustercert as cc
 
-edges = [(0, 1), (0, 3), (0, 4), (0, 10), (1, 2), (1, 4), (1, 11), (2, 3), (2, 5), (2, 11), (3, 5), (3, 10),
-         (4, 6), (4, 9), (5, 7), (5, 8), (6, 7), (6, 9), (6, 10), (7, 8), (7, 10), (8, 9), (8, 11), (9, 11)]
+edges = [(0, 1), (0, 4), (0, 20), (0, 28), (1, 2), (1, 4), (1, 35), (2, 3), (2, 5), (2, 35), (3, 5), (3, 16),
+         (3, 21), (4, 9), (4, 10), (5, 11), (5, 12), (6, 7), (6, 16), (6, 31), (6, 34), (7, 8), (7, 16), (7, 32),
+         (8, 9), (8, 17), (8, 32), (9, 10), (9, 17), (10, 11), (10, 18), (11, 12), (11, 18), (12, 13), (12, 19),
+         (13, 14), (13, 19), (13, 29), (14, 15), (14, 20), (14, 29), (15, 20), (15, 30), (15, 33), (16, 21),
+         (17, 22), (17, 23), (18, 24), (18, 25), (19, 26), (19, 27), (20, 28), (21, 22), (21, 29), (22, 23),
+         (22, 29), (23, 24), (23, 30), (24, 25), (24, 30), (25, 26), (25, 31), (26, 27), (26, 31), (27, 28),
+         (27, 32), (28, 32), (30, 33), (31, 34), (33, 34), (33, 35), (34, 35)]
 result = cc.certify(edges, 'kagome')
 print(cc.summary(result))
-cc.plot(result, details=True)
+cc.plot(result)
 ```
 
 ```text
-YES: periodic kagome cluster, periods [[2, 0], [0, 2]]
+YES: periodic kagome cluster, periods [[2, 2], [0, 6]]
   periods (in primitive vectors -> Cartesian):
-    (2, 0) -> (2, 0)
-    (0, 2) -> (1, 1.732)
+    (4, -2) -> (3, -1.732)
+    (2, 2) -> (3, 1.732)
   site map, your label -> (unit cell, sublattice):
-    0 -> (0, 1), 1
-    1 -> (0, 1), 0
+    0 -> (0, 3), 1
+    1 -> (0, 3), 2
+    2 -> (1, 0), 1
     ...
-  4 allowed momenta (in reciprocal primitive vectors): (0, 0), (0, 1/2), (1/2, 0), (1/2, 1/2)
+  12 allowed momenta (in reciprocal primitive vectors): (0, 0), (0, 1/2), (1/6, 1/3), (1/6, 5/6), (1/3, 1/6), (1/3, 2/3), (1/2, 0), (1/2, 1/2), (2/3, 1/3), (2/3, 5/6), (5/6, 1/6), (5/6, 2/3)
 ```
 
 ![the certified cluster](docs/quickstart.png)
 
-That is your cluster, drawn with your own labels. Each shaded tile is one unit cell of the kagome lattice, labelled with its coordinates c in units of the primitive vectors a₁ and a₂ (the arrows below). Each site is coloured by its sublattice, one of the three sites of a unit cell. So site 9 is sublattice 0 of unit cell (0, 0), exactly as the site map says. A bond that wraps around the boundary ends on a dashed circle labelled with the site it wraps to. The site map is the certificate: under it, your 24 bonds are exactly the kagome bonds folded by those periods.
+That is your cluster, drawn with your own labels and folded into its supercell (the blue rhombus). A bond that wraps around the boundary ends on a dashed circle labelled with the site it wraps to. The site map is the certificate: under it, your 72 bonds are exactly the kagome bonds folded by those periods. `cc.plot(result, details=True)` draws the cluster in its unit cells instead, with sites coloured by sublattice, exactly as the site map lists them.
 
 The certificate also gives the cluster's symmetries, ready for exact diagonalization:
 
 ```python
 sym = cc.symmetry(result)
-print(sym.summary(n_up=6))
-sym.plot(n_up=6)
+print(sym.summary(n_up=18))
+sym.plot(n_up=18)
 ```
 
 ```text
-symmetry of the periodic kagome cluster, periods [[2, 0], [0, 2]]
-  12 sites, 48 lattice symmetries = 4 translations x 12 point operations (point group C6v; the infinite lattice has C6v, 12 operations)
+symmetry of the periodic kagome cluster, periods [[2, 2], [0, 6]]
+  36 sites, 144 lattice symmetries = 12 translations x 12 point operations (point group C6v; the infinite lattice has C6v, 12 operations)
   every automorphism of the bond graph is a lattice symmetry
   point operations: E, C6 x2, C3 x2, C2, σ x6
-  4 momenta in 2 stars, k in reciprocal primitive vectors:
-    name  k         star  little co-group  irreps, (dimension) if not 1
-    Γ     (0, 0)       1  C6v              A1 A2 B1 B2 E1(2) E2(2)
-    M     (0, 1/2)     3  C2v              A1 A2 B1 B2
-  block sizes (n_up = 6; each level is (star x dimension)-fold degenerate):
-    Γ: A1 30, A2 20, B1 18, B2 18, E1 34, E2 46
-    M: A1 60, A2 50, B1 58, B2 58
+  12 momenta in 4 stars, k in reciprocal primitive vectors:
+    name  k           star  little co-group  irreps, (dimension) if not 1
+    Γ     (0, 0)         1  C6v              A1 A2 B1 B2 E1(2) E2(2)
+    M     (0, 1/2)       3  C2v              A1 A2 B1 B2
+          (1/6, 1/3)     6  Cs               A' A"
+    K     (1/3, 2/3)     2  C3v              A1 A2 E(2)
+  block sizes (n_up = 18; each level is (star x dimension)-fold degenerate):
+    Γ: A1 63044766, A2 63015686, B1 63018066, B2 63013296, E1 126030910, E2 126059980
+    M: A1 189075666, A2 189046586, B1 189069946, B2 189065176
+    (1/6, 1/3): A' 378145494, A" 378111654
+    K: A1 126062478, A2 126028638, E 252091116
 ```
 
 ![the symmetry sectors of the cluster](docs/symmetry_quickstart.png)
 
-The cluster keeps the full hexagonal symmetry of kagome. Its 4 momenta form 2 *stars* (left: momenta of one colour have the same spectrum), and the operations that keep each momentum split it further into *irreps*. So the 924 states at zero magnetization split into 10 blocks of at most 60 (right), and each level in a block repeats as often as the number on the right. The permutations and characters behind each block are in `sym`; see [Symmetry sectors](#symmetry-sectors).
+Read it from the top. The cluster keeps all 12 rotations and reflections of the hexagon (the point group C6v), so it has 12 × 12 = 144 symmetries. Its 12 momenta fall into 4 *stars*: momenta that a rotation turns into each other, and that therefore have the same spectrum (left, one colour per star). At one momentum per star, the operations that keep that momentum (its *little co-group*) split the states further into *irreps*, named A1, E2 and so on. Each sector is labelled `momentum.irrep`, for example `Γ.A1` or `K.E`. At zero magnetization (18 up spins) the 9 075 135 300 states become 15 blocks of at most 378 million (right). Every level in `K.E` is 2 × 2 = 4-fold degenerate: a star of 2 times an irrep of dimension 2. If these words are new, [`docs/TERMINOLOGY.md`](docs/TERMINOLOGY.md) explains them from scratch, with pictures and a worked example on this cluster. The permutations and characters behind each block are in `sym`; see [Symmetry sectors](#symmetry-sectors).
 
-Now a second list. It also has 12 sites and 24 bonds, every site has 4 neighbours, and every site lies in two corner-sharing triangles, just as in kagome:
+Now a 12-site list. It has 24 bonds, every site has 4 neighbours, and every site lies in two corner-sharing triangles, just as in kagome:
 
 ```python
 impostor = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 2), (1, 7), (1, 9), (2, 8), (2, 11), (3, 4), (3, 5), (3, 6),
@@ -72,7 +82,7 @@ print(cc.summary(cc.certify(impostor, 'kagome')))
 NO: not a periodic kagome cluster: none of the 7 possible supercells of 4 unit cells matches
 ```
 
-Every way of folding kagome into 12 sites was tried, and none gives this graph. Both lists are in [`examples/clusters/`](examples/clusters), so the same check runs from the shell: `clustercert examples/clusters/kagome_12.txt kagome`. Built-in lattices: square, triangular, honeycomb, kagome, checkerboard, cubic, bcc, fcc, diamond, pyrochlore.
+Every way of folding kagome into 12 sites was tried, and none gives this graph. Both lists are in [`examples/clusters/`](examples/clusters), so the same checks run from the shell: `clustercert examples/clusters/kagome_36.txt kagome --symmetry --n-up 18`. Built-in lattices: square, triangular, honeycomb, kagome, checkerboard, cubic, bcc, fcc, diamond, pyrochlore.
 
 The rest of this page explains what is going on, step by step. The tour notebook [`examples/tour.ipynb`](examples/tour.ipynb) follows the same path, with pictures.
 
@@ -272,34 +282,9 @@ Example clusters are in [`examples/clusters/`](examples/clusters). They include 
 
 ## Symmetry sectors
 
-A certified cluster is a folded lattice, so its symmetries follow from the lattice: every rotation, reflection and translation that survives the folding, written as a permutation of *your* site labels, and the sectors they split the Hilbert space into. For the 36-site kagome cluster:
+A certified cluster is a folded lattice, so its symmetries follow from the lattice: every rotation, reflection and translation that survives the folding, written as a permutation of *your* site labels, and the sectors they split the Hilbert space into. The [quick start](#quick-start) shows them for the 36-site kagome cluster.
 
-```python
-sym = cc.symmetry(cc.certify(cc.read_edges('examples/clusters/kagome_36.txt'), 'kagome'))
-print(sym.summary(n_up=18))
-```
-
-```text
-symmetry of the periodic kagome cluster, periods [[2, 2], [0, 6]]
-  36 sites, 144 lattice symmetries = 12 translations x 12 point operations (point group C6v; the infinite lattice has C6v, 12 operations)
-  every automorphism of the bond graph is a lattice symmetry
-  point operations: E, C6 x2, C3 x2, C2, σ x6
-  12 momenta in 4 stars, k in reciprocal primitive vectors:
-    name  k           star  little co-group  irreps, (dimension) if not 1
-    Γ     (0, 0)         1  C6v              A1 A2 B1 B2 E1(2) E2(2)
-    M     (0, 1/2)       3  C2v              A1 A2 B1 B2
-          (1/6, 1/3)     6  Cs               A' A"
-    K     (1/3, 2/3)     2  C3v              A1 A2 E(2)
-  block sizes (n_up = 18; each level is (star x dimension)-fold degenerate):
-    Γ: A1 63044766, A2 63015686, B1 63018066, B2 63013296, E1 126030910, E2 126059980
-    M: A1 189075666, A2 189046586, B1 189069946, B2 189065176
-    (1/6, 1/3): A' 378145494, A" 378111654
-    K: A1 126062478, A2 126028638, E 252091116
-```
-
-Read it from the top. The cluster keeps all 12 rotations and reflections of the hexagon (the point group C6v), so it has 12 × 12 = 144 symmetries. Its 12 momenta fall into 4 *stars*: momenta that a rotation turns into each other, and that therefore have the same spectrum. At one momentum per star, the operations that keep that momentum (its *little co-group*) split the states further into *irreps*, named A1, E2 and so on. Each sector is labelled `momentum.irrep`, for example `Γ.A1` or `K.E`. At zero magnetization (18 up spins) the 9 075 135 300 states become blocks of about 63 million at Γ. Every level in `K.E` is 2 × 2 = 4-fold degenerate: a star of 2 times an irrep of dimension 2. If these words are new, [`docs/TERMINOLOGY.md`](docs/TERMINOLOGY.md) explains them from scratch, with pictures and a worked example on this cluster. From the shell: `clustercert examples/clusters/kagome_36.txt kagome --symmetry --n-up 18`.
-
-**Pictures.** `sym.plot(n_up)` draws the momenta and the blocks, as above. `sym.plot(n_up, mosaic=True)` shows the whole Hilbert space as one rectangle instead, with a column per star and a tile per sector, each as large as its number of states:
+**Pictures.** `sym.plot(n_up)` draws the momenta and the blocks, as in the quick start. `sym.plot(n_up, mosaic=True)` shows the whole Hilbert space as one rectangle instead, with a column per star and a tile per sector, each as large as its number of states:
 
 ![the 36-site kagome cluster as a mosaic of sectors](docs/symmetry_mosaic.png)
 

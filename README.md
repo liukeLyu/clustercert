@@ -121,6 +121,7 @@ print(cc.KAGOME.describe())
 - `sites`: the site map, giving each of your sites its (unit cell, sublattice) in the infinite lattice. `site_positions(result, lattice)` gives Cartesian positions. Use them to build translation operators.
 - `plot(result)`: a drawing of the cluster with your site labels, its wrap-around bonds and its supercell, in 2D or 3D (needs matplotlib). `details=True` (2D) draws it in its unit cells instead, with sublattice colours and the primitive vectors, matching the site map. `further=` adds further-neighbour bond families, drawn dashed. `plot_lattice(lattice)` draws one unit cell of a lattice.
 - `momenta(periods, lattice)`: the momenta allowed by the boundary conditions, with one per unit cell in the supercell. Use it to check which high-symmetry points your cluster contains.
+- `symmetry(result)`: the symmetry sectors of the cluster, with the permutations and characters an ED code needs; see [Symmetry sectors](#symmetry-sectors).
 - `reason`: a short explanation, including for failures. For example: `degrees [5, 6], but every pyrochlore site has [6] (sites with too few bonds: open boundary or a missing wrap-around bond?)`.
 
 ## One graph, several supercells
@@ -243,10 +244,59 @@ Add `--shell 2 j2_edges.txt` (repeatable) to certify further-neighbour bonds too
 
 Example clusters are in [`examples/clusters/`](examples/clusters). They include the 16-site pyrochlore cluster (the conventional cubic cell with periodic boundaries, as in the exact diagonalization of [Wei and Curnoe, arXiv:2208.06937](https://arxiv.org/abs/2208.06937); [J. Phys.: Condens. Matter 35, 295802 (2023)](https://doi.org/10.1088/1361-648X/acccc8)), the 32-site one of [arXiv:2010.03563](https://arxiv.org/abs/2010.03563), and a 28-site [111] slab after [arXiv:1710.11316](https://arxiv.org/abs/1710.11316). The slab has open boundaries, so it is correctly rejected.
 
+## Symmetry sectors
+
+A certified cluster is a folded lattice, so its symmetries follow from the lattice: every rotation, reflection and translation that survives the folding, written as a permutation of *your* site labels, and the sectors they split the Hilbert space into. For the 36-site kagome cluster:
+
+```python
+sym = cc.symmetry(cc.certify(cc.read_edges('examples/clusters/kagome_36.txt'), 'kagome'))
+print(sym.summary(n_up=18))
+```
+
+```text
+symmetry of the periodic kagome cluster, periods [[2, 2], [0, 6]]
+  36 sites, 144 lattice symmetries = 12 translations x 12 point operations (point group C6v; the infinite lattice has C6v, 12 operations)
+  every automorphism of the bond graph is a lattice symmetry
+  point operations: E, C6 x2, C3 x2, C2, σ x6
+  12 momenta in 4 stars, k in reciprocal primitive vectors:
+    name  k           star  little co-group  irreps, (dimension) if not 1
+    Γ     (0, 0)         1  C6v              A1 A2 B1 B2 E1(2) E2(2)
+    M     (0, 1/2)       3  C2v              A1 A2 B1 B2
+          (1/6, 1/3)     6  Cs               A' A"
+    K     (1/3, 2/3)     2  C3v              A1 A2 E(2)
+  block sizes (n_up = 18; each level is (star x dimension)-fold degenerate):
+    Γ: A1 63044766, A2 63015686, B1 63018066, B2 63013296, E1 126030910, E2 126059980
+    M: A1 189075666, A2 189046586, B1 189069946, B2 189065176
+    (1/6, 1/3): A' 378145494, A" 378111654
+    K: A1 126062478, A2 126028638, E 252091116
+```
+
+Read it from the top. The cluster keeps all 12 rotations and reflections of the hexagon (the point group C6v), so it has 12 × 12 = 144 symmetries. Its 12 momenta fall into 4 *stars*: momenta that a rotation turns into each other, and that therefore have the same spectrum. At one momentum per star, the operations that keep that momentum (its *little co-group*) split the states further into *irreps*, named A1, E2 and so on. Each sector is labelled `momentum.irrep`, for example `Γ.A1` or `K.E`. At zero magnetization (18 up spins) the 9 075 135 300 states become blocks of about 63 million at Γ. Every level in `K.E` is 2 × 2 = 4-fold degenerate: a star of 2 times an irrep of dimension 2. If these words are new, [`docs/TERMINOLOGY.md`](docs/TERMINOLOGY.md) explains them from scratch, with pictures and a worked example on this cluster. From the shell: `clustercert examples/clusters/kagome_36.txt kagome --symmetry --n-up 18`.
+
+**What an ED code needs** is the permutations and the characters, in your labels:
+
+```python
+gens = sym.generators()                 # a few operations that generate all 144
+names = [sym.operations[g] for g in gens]
+# ['E, then translate by (0, 1)', 'E, then translate by (1, 0)', 'C6 + (0, 1/2)', 'σ']
+c6 = sym.permutation(gens[2])           # {your label: the label C6 sends it to}
+ke = sym.sector('K.E')
+ke.elements, ke.characters              # the 72 elements of the little group of K, and the character of each
+```
+
+Row g of `sym.permutations` sends site `sym.sites[i]` to `sym.sites[sym.permutations[g, i]]`. The projector onto a sector is P = (d/|G_k|) Σ_g χ(g)* U(g), summed over the little group G_k, where U(g) moves the spin on each site to its image. For small clusters, `sym.projector('K.E', n_up)` builds it as a dense matrix. `block_sizes(n_up, spin_flip=True)` also splits each sector by its parity under flipping every spin, with labels like `Γ.A1+`.
+
+**How it works.** Nothing is tabulated per lattice. The rotations and reflections are the integer matrices, acting on unit-cell coordinates, that keep the lengths of the primitive vectors. For each, the search finds the translations that send every site to a site and every bond to a bond, so glides and screw axes (diamond, pyrochlore) come out without special care. The cluster keeps the operations that map its periods onto its periods. The irreps are computed numerically from the actual little group, translations included, so non-symmorphic lattices need no special treatment either. The names Γ, M, K, C6v, A1, … are a readable layer on top; where no standard name applies, irreps are numbered. The same works for a lattice of your own, given its geometry: `cc.symmetry(result, my_lattice)`. Details and proofs: [`docs/METHOD.md`](docs/METHOD.md), §9.
+
+**Checked against brute force.** For one small cluster of every built-in lattice, including tilted supercells and the non-symmorphic diamond and pyrochlore, the tests build every projector on the full Hilbert space (or a fixed-S^z part of it) and check that: each one is a projector of the predicted rank; together they sum to the identity; an XXZ Hamiltonian on the bonds commutes with every symmetry; and its spectrum, sector by sector, reproduces the full spectrum. They also reproduce textbook results: one flipped spin on kagome carries A1 + E2 at Γ, on pyrochlore A1g + T2g, on diamond A1g + A2u, and at the X point of diamond every irrep is 2-dimensional.
+
+**One cluster, several supercells.** The symmetry belongs to the supercell in `result`. When several supercells give the same graph, `summary` points out one with more symmetry. The 32-site pyrochlore cluster, for example, keeps 16 point operations in its most compact supercell and all 48 in the 2×2×2 FCC one. Conversely, the bond graph can have symmetries that are not lattice symmetries: the 4×4 square torus is a hypercube, with 384 automorphisms instead of 128. The summary says so, since such symmetries can make levels of different sectors coincide.
+
 ## Limits
 
 - **Translations only.** Twisted, screw or glide boundary conditions are other foldings, and the search does not try them.
 - **Simple graphs only.** In very small supercells, a bond can wrap onto itself, or two bonds can join the same pair of sites (the 2×2 square torus). Such supercells are skipped. If your code doubles those couplings, the cluster will be reported as not matching.
+- **Symmetry sectors.** Spatial symmetries of the lattice, and optionally the spin flip, only: time reversal, spin rotation and spin–orbit coupling (double groups) are not included. A model whose couplings depend on the sublattice, or whose bonds have an orientation, can have less symmetry than its lattice. The unit cell must be primitive, otherwise rotations that do not map the chosen cell onto itself are missed. Block sizes are for spin 1/2 and exact up to about 10¹³ states; dense projectors are for small clusters only.
 - **Size.** The number of candidates grows only slowly with N. A 64-site pyrochlore cluster takes about a second and a 108-site one about ten seconds; the 2D clusters used in ED take well under a second.
 
 ## References
@@ -257,5 +307,7 @@ Example clusters are in [`examples/clusters/`](examples/clusters). They include 
 * C. S. Chiu, A. N. Carroll, N. Regnault and A. A. Houck, *Line-graph-lattice crystal structures of stoichiometric materials*, [arXiv:2109.13940](https://arxiv.org/abs/2109.13940); [Phys. Rev. Research 4, 023063 (2022)](https://doi.org/10.1103/PhysRevResearch.4.023063). Kagome, pyrochlore and checkerboard as line graphs.
 * L. Balents, M. P. A. Fisher and S. M. Girvin, *Fractionalization in an Easy-axis Kagome Antiferromagnet*, [arXiv:cond-mat/0110005](https://arxiv.org/abs/cond-mat/0110005); [Phys. Rev. B 65, 224412 (2002)](https://doi.org/10.1103/PhysRevB.65.224412). The BFG model, with J₁, J₂ and the across-hexagon J₃.
 * A. Jüttner and P. Madarasi, *VF2++: an improved subgraph isomorphism algorithm*, Discrete Appl. Math. 242, 69 (2018). The graph-isomorphism search.
+* A. Wietek and A. M. Läuchli, *Sublattice coding algorithm and distributed memory parallelization for large-scale exact diagonalizations of quantum many-body systems*, [arXiv:1804.05028](https://arxiv.org/abs/1804.05028); [Phys. Rev. E 98, 033309 (2018)](https://doi.org/10.1103/PhysRevE.98.033309). Symmetry-adapted bases for exact diagonalization.
+* C. J. Bradley and A. P. Cracknell, *The Mathematical Theory of Symmetry in Solids* (Oxford, 1972). Space groups, stars, little groups and their irreps.
 
 If this project helped you, you can [sponsor me on GitHub](https://github.com/sponsors/liukeLyu) or on [爱发电 Afdian](https://afdian.com/a/liukelyu) ♥

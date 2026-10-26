@@ -34,6 +34,28 @@ YES: periodic kagome cluster, periods [[2, 0], [0, 2]]
 
 That is your cluster, drawn with your own labels. Each shaded tile is one unit cell of the kagome lattice, labelled with its coordinates c in units of the primitive vectors a₁ and a₂ (the arrows below). Each site is coloured by its sublattice, one of the three sites of a unit cell. So site 9 is sublattice 0 of unit cell (0, 0), exactly as the site map says. A bond that wraps around the boundary ends on a dashed circle labelled with the site it wraps to. The site map is the certificate: under it, your 24 bonds are exactly the kagome bonds folded by those periods.
 
+The certificate also gives the cluster's symmetries, ready for exact diagonalization:
+
+```python
+print(cc.symmetry(result).summary(n_up=6))
+```
+
+```text
+symmetry of the periodic kagome cluster, periods [[2, 0], [0, 2]]
+  12 sites, 48 lattice symmetries = 4 translations x 12 point operations (point group C6v; the infinite lattice has C6v, 12 operations)
+  every automorphism of the bond graph is a lattice symmetry
+  point operations: E, C6 x2, C3 x2, C2, σ x6
+  4 momenta in 2 stars, k in reciprocal primitive vectors:
+    name  k         star  little co-group  irreps, (dimension) if not 1
+    Γ     (0, 0)       1  C6v              A1 A2 B1 B2 E1(2) E2(2)
+    M     (0, 1/2)     3  C2v              A1 A2 B1 B2
+  block sizes (n_up = 6; each level is (star x dimension)-fold degenerate):
+    Γ: A1 30, A2 20, B1 18, B2 18, E1 34, E2 46
+    M: A1 60, A2 50, B1 58, B2 58
+```
+
+The cluster keeps the full hexagonal symmetry of kagome, so the 924 states at zero magnetization split into blocks of at most 60. The permutations and characters behind each block are in the returned object; see [Symmetry sectors](#symmetry-sectors).
+
 Now a second list. It also has 12 sites and 24 bonds, every site has 4 neighbours, and every site lies in two corner-sharing triangles, just as in kagome:
 
 ```python

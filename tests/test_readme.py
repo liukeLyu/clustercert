@@ -33,7 +33,8 @@ def test_readme_shown_output_is_real(monkeypatch, capsys):
     monkeypatch.chdir(ROOT)
     text = (ROOT / 'README.md').read_text()
     namespace: dict = {}
-    for code, shown in re.findall(r"```python\n(.*?)```\n\n```text\n(.*?)```", text, flags=re.S):
+    pairs = r"```python\n((?:(?!```).)*?)```\n\n```text\n(.*?)```"     # a python block directly followed by its output
+    for code, shown in re.findall(pairs, text, flags=re.S):
         exec(compile(code, 'README.md', 'exec'), namespace)
         printed = capsys.readouterr().out.splitlines()
         assert all(line in printed for line in _stable(shown.splitlines()) if line.strip() != '...'), shown

@@ -22,13 +22,15 @@ CLUSTERS = [
 
 
 def certified(name, periods, labels=None):
-    edges = list(cc.cluster(cc.LATTICES[name], periods).edges)
+    """``name``: a built-in lattice name, or a Lattice."""
+    lattice = cc.LATTICES[name] if isinstance(name, str) else name
+    edges = list(cc.cluster(lattice, periods).edges)
     if labels:          # the user's own labels, unrelated to (cell, sublattice)
         nodes = sorted({v for e in edges for v in e})
         rename = {v: f's{i}' for i, v in enumerate(np.random.default_rng(1).permutation(len(nodes)))}
         rename = {v: rename[i] for i, v in zip(rename, nodes)}
         edges = [(rename[u], rename[v]) for u, v in edges]
-    result = cc.certify(edges, name, periods=periods)
+    result = cc.certify(edges, lattice, periods=periods)
     assert result['certified']
     return result, edges
 
@@ -56,7 +58,7 @@ def sector_space(p):
 
 def brute_force(name, periods, n_up, labels=False):
     result, edges = certified(name, periods, labels)
-    sym = cc.symmetry(result)
+    sym = cc.symmetry(result, None if isinstance(name, str) else name)
     n = len(sym.sites)
     sizes = sym.block_sizes(n_up)
     states = np.array([x for x in range(2 ** n) if n_up is None or bin(x).count('1') == n_up])
@@ -235,6 +237,42 @@ def test_user_defined_lattice():
     sizes = sym.block_sizes(n_up=1)
     # corner: A1; the two edge centres are swapped by C4 and the diagonal mirrors, kept by the axial ones: A1 + B1
     assert {k: v for k, v in sizes.items() if k.startswith('Γ') and v} == {'Γ.A1': 2, 'Γ.B1': 1}
+
+
+def test_user_defined_lattices_brute_force():
+    lieb = cc.lattice_from_geometry('Lieb', vectors=[[1, 0], [0, 1]], positions=[[0, 0], [0.5, 0], [0, 0.5]],
+                                    bond_length=0.5)
+    brute_force(lieb, [[2, 0], [0, 2]], 4)
+    # a square lattice described with a doubled (non-primitive) cell: the extra translation appears as a point
+    # operation with W = 1, names are numbered, and the sectors are still right
+    doubled = cc.lattice_from_geometry('square, 2-site cell', vectors=[[2, 0], [0, 1]], positions=[[0, 0], [1, 0]],
+                                       bond_length=1)
+    sym, _ = brute_force(doubled, [[2, 0], [0, 3]], 3)
+    assert sym.point_group.startswith('order') and len(sym.point_operations) == 8
+
+
+def test_terminology_worked_example():
+    """The one-magnon table of docs/TERMINOLOGY.md, section 6."""
+    edges = cc.read_edges(EXAMPLES / 'kagome_36.txt')
+    sym = cc.symmetry(cc.certify(edges, 'kagome'))
+    where = {s: i for i, s in enumerate(sym.sites)}
+    h = np.zeros((36, 36))           # Heisenberg model, one up spin, energy relative to the polarized state
+    for u, v in edges:
+        i, j = where[u], where[v]
+        h[i, j] = h[j, i] = 0.5
+        h[i, i] -= 0.5
+        h[j, j] -= 0.5
+    table = {}
+    for s in sym.sectors:
+        q = sector_space(sym.projector(s.label, 1)[1])
+        if q.shape[1]:
+            table[s.label] = sorted(set(np.round(np.linalg.eigvalsh(q.conj().T @ h @ q), 6)))
+    assert table == {'Γ.A1': [0], 'Γ.E2': [-3], 'M.A1': [-2], 'M.B1': [-3], 'M.B2': [-1],
+                     "(1/6, 1/3).A'": [-3, -0.5], '(1/6, 1/3).A"': [-2.5], 'K.A1': [-3], 'K.E': [-1.5]}
+    doc = (Path(__file__).resolve().parents[1] / 'docs' / 'TERMINOLOGY.md').read_text()
+    printed = sym.summary(n_up=1).splitlines()
+    for block in doc.split('```text\n')[1:]:          # every output shown on the page is printed by summary()
+        assert all(line in printed for line in block.split('```')[0].splitlines()), block
 
 
 def test_more_symmetric_supercell_is_pointed_out():

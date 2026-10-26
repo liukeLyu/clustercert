@@ -72,3 +72,45 @@ def test_line_graph_sites_lie_in_unit_cell_zero():
     for lattice in (cc.CHECKERBOARD, cc.line_graph_lattice(cc.HONEYCOMB)):
         frac = np.linalg.solve(np.array(lattice.vectors).T, np.array(lattice.positions).T).T
         assert np.all(frac > -1e-9) and np.all(frac < 1 - 1e-9)
+
+
+def test_brillouin_zones():
+    from clustercert.plot import _brillouin_zone
+    for lattice, n_corners, n_edges in ((cc.KAGOME, 6, 6), (cc.SQUARE, 4, 4), (cc.CUBIC, 8, 12),
+                                        (cc.FCC, 24, 36), (cc.BCC, 14, 24)):
+        b = 2 * np.pi * np.linalg.inv(np.array(lattice.vectors, float)).T
+        corners, edges = _brillouin_zone(b)
+        assert (len(corners), len(edges)) == (n_corners, n_edges), lattice.name
+
+
+def test_plot_symmetry_bars_and_mosaic():
+    sym = cc.symmetry(cc.certify(cc.read_edges(CLUSTERS / 'kagome_12.txt'), 'kagome'))
+    zone, bars = sym.plot(6)
+    assert len(bars.patches) == len(sym.sectors) == 10
+    assert sorted(int(t.get_text().replace(',', '')) for t in bars.texts if t.get_text()[0].isdigit()) == \
+        sorted(sym.block_sizes(6).values())
+    assert {t.get_text() for t in zone.texts} == {'Γ', 'M'}
+    _, tiles = cc.plot_symmetry(sym, 6, spin_flip=True, mosaic=True)
+    assert len(tiles.patches) == 2 * len(sym.sectors)
+    area = sum(p.get_width() + 0.008 for p in tiles.patches if p.get_y() < 0.01)        # bottom row spans [0, 1]
+    assert np.isclose(area, 1)
+    zone, _ = cc.symmetry(cc.certify(cc.read_edges(CLUSTERS / 'pyrochlore_16.txt'), 'pyrochlore')).plot()
+    assert zone.name == '3d' and len(zone.lines) == 36         # truncated octahedron
+    plt.close('all')
+
+
+def test_plot_symmetry_elements_kept_and_lost():
+    def solid_and_faint(ax):
+        mirrors = [line for line in ax.lines if line.get_color() in ('#2a78d6', '#b4b2ad')]
+        return sum(line.get_color() == '#2a78d6' for line in mirrors), sum(line.get_color() == '#b4b2ad'
+                                                                           for line in mirrors)
+    sym = cc.symmetry(cc.certify(cc.read_edges(CLUSTERS / 'kagome_12.txt'), 'kagome'))
+    assert solid_and_faint(cc.plot_symmetry_elements(sym)) == (6, 0)
+    tilted = [[3, 1], [-1, 3]]                                      # keeps C4, loses every mirror
+    sym = cc.symmetry(cc.certify(list(cc.cluster(cc.SQUARE, tilted).edges), 'square', periods=tilted))
+    ax = cc.plot_symmetry_elements(sym)
+    assert sym.point_group == 'C4' and solid_and_faint(ax) == (0, 4)
+    with pytest.raises(ValueError, match='2D'):
+        cc.plot_symmetry_elements(cc.symmetry(cc.certify(cc.read_edges(CLUSTERS / 'pyrochlore_16.txt'),
+                                                         'pyrochlore')))
+    plt.close('all')

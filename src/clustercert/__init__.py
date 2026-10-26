@@ -20,14 +20,14 @@ from .lattice import (
     neighbour_distances,
     neighbour_shell,
 )
-from .plot import plot, plot_lattice
+from .plot import plot, plot_lattice, plot_symmetry, plot_symmetry_elements
 from .report import summary
 from .supercell import momenta, period_vectors, site_positions
 from .symmetry import Sector, Symmetry, space_group, symmetry
 
 __all__ = ['certify', 'summary', 'symmetry', 'Symmetry', 'Sector', 'space_group', 'plot', 'plot_lattice',
-           'read_edges', 'bonds', 'identify', 'cluster', 'hnf', 'supercell_hnfs', 'period_vectors', 'site_positions',
-           'momenta', 'Lattice', 'line_graph_lattice',
+           'plot_symmetry', 'plot_symmetry_elements', 'read_edges', 'bonds', 'identify', 'cluster', 'hnf',
+           'supercell_hnfs', 'period_vectors', 'site_positions', 'momenta', 'Lattice', 'line_graph_lattice',
            'lattice_from_geometry', 'neighbour_shell', 'neighbour_distances', 'bond_families', 'LATTICES', 'SQUARE',
            'TRIANGULAR', 'HONEYCOMB', 'KAGOME', 'CHECKERBOARD', 'CUBIC', 'BCC', 'FCC', 'DIAMOND', 'PYROCHLORE']
 __version__ = '0.1.0'

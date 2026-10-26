@@ -37,7 +37,9 @@ That is your cluster, drawn with your own labels. Each shaded tile is one unit c
 The certificate also gives the cluster's symmetries, ready for exact diagonalization:
 
 ```python
-print(cc.symmetry(result).summary(n_up=6))
+sym = cc.symmetry(result)
+print(sym.summary(n_up=6))
+sym.plot(n_up=6)
 ```
 
 ```text
@@ -54,7 +56,9 @@ symmetry of the periodic kagome cluster, periods [[2, 0], [0, 2]]
     M: A1 60, A2 50, B1 58, B2 58
 ```
 
-The cluster keeps the full hexagonal symmetry of kagome, so the 924 states at zero magnetization split into blocks of at most 60. The permutations and characters behind each block are in the returned object; see [Symmetry sectors](#symmetry-sectors).
+![the symmetry sectors of the cluster](docs/symmetry_quickstart.png)
+
+The cluster keeps the full hexagonal symmetry of kagome. Its 4 momenta form 2 *stars* (left: momenta of one colour have the same spectrum), and the operations that keep each momentum split it further into *irreps*. So the 924 states at zero magnetization split into 10 blocks of at most 60 (right), and each level in a block repeats as often as the number on the right. The permutations and characters behind each block are in `sym`; see [Symmetry sectors](#symmetry-sectors).
 
 Now a second list. It also has 12 sites and 24 bonds, every site has 4 neighbours, and every site lies in two corner-sharing triangles, just as in kagome:
 
@@ -294,6 +298,14 @@ symmetry of the periodic kagome cluster, periods [[2, 2], [0, 6]]
 ```
 
 Read it from the top. The cluster keeps all 12 rotations and reflections of the hexagon (the point group C6v), so it has 12 × 12 = 144 symmetries. Its 12 momenta fall into 4 *stars*: momenta that a rotation turns into each other, and that therefore have the same spectrum. At one momentum per star, the operations that keep that momentum (its *little co-group*) split the states further into *irreps*, named A1, E2 and so on. Each sector is labelled `momentum.irrep`, for example `Γ.A1` or `K.E`. At zero magnetization (18 up spins) the 9 075 135 300 states become blocks of about 63 million at Γ. Every level in `K.E` is 2 × 2 = 4-fold degenerate: a star of 2 times an irrep of dimension 2. If these words are new, [`docs/TERMINOLOGY.md`](docs/TERMINOLOGY.md) explains them from scratch, with pictures and a worked example on this cluster. From the shell: `clustercert examples/clusters/kagome_36.txt kagome --symmetry --n-up 18`.
+
+**Pictures.** `sym.plot(n_up)` draws the momenta and the blocks, as above. `sym.plot(n_up, mosaic=True)` shows the whole Hilbert space as one rectangle instead, with a column per star and a tile per sector, each as large as its number of states:
+
+![the 36-site kagome cluster as a mosaic of sectors](docs/symmetry_mosaic.png)
+
+For a 2D lattice, `plot_symmetry_elements(sym)` shows which mirrors and rotations the cluster keeps. The tilted 10-site square cluster keeps the C4 rotation but loses every mirror, so its irreps are those of C4, not C4v:
+
+<img src="docs/symmetry_elements.png" alt="the mirrors lost by the tilted square cluster" width="340">
 
 **What an ED code needs** is the permutations and the characters, in your labels:
 

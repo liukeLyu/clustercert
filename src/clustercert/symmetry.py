@@ -445,6 +445,13 @@ class Symmetry:
     sectors: list
     n_automorphisms: int = None
     better_supercell: tuple = None      # (periods, point operations) of a matching supercell with more symmetry
+    vectors: tuple = None               # primitive vectors of the lattice, rows, for plot_symmetry
+    point_linear: list = None           # linear part W of each point operation, as in point_operations
+
+    def plot(self, n_up=None, **kwargs):
+        """Draw the momenta and the sectors: see :func:`clustercert.plot_symmetry`."""
+        from .plot import plot_symmetry
+        return plot_symmetry(self, n_up, **kwargs)
 
     def permutation(self, index):
         """Operation ``index`` as a dict, your label -> your label."""
@@ -819,7 +826,8 @@ def symmetry(result, lattice=None, *, automorphisms=True):
         if count > most:
             better, most = (other, count), count
     return Symmetry(base.name, h, sites, names, perms, translation_cells, point_names, point_group,
-                    _schoenflies(lattice_rs), len(lattice_rs), ks, stars, sectors, n_aut, better)
+                    _schoenflies(lattice_rs), len(lattice_rs), ks, stars, sectors, n_aut, better,
+                    tuple(map(tuple, a)), [w.tolist() for w in rep_w])
 
 
 def _decompose(d_mats, rng, attempts=5):

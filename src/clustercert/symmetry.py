@@ -39,7 +39,7 @@ from the operations; see docs/TERMINOLOGY.md.
 """
 from dataclasses import dataclass, field
 from fractions import Fraction
-from itertools import product
+from itertools import combinations, product
 
 import networkx as nx
 import numpy as np
@@ -421,8 +421,14 @@ class Symmetry:
     ``sites``: your site labels, in the order used by ``permutations``.
     ``operations``: names of the symmetries, one per row of ``permutations``;
     row g sends site ``sites[i]`` to ``sites[permutations[g, i]]``.
-    ``translations``: indices of the pure translations, with their cell vectors.
+    ``translation_cells``: ``{operation index: cell vector}`` for the pure translations.
     ``point_operations``: one name per kept point operation (coset of the translations).
+    ``point_group``: its Schoenflies name. ``stars``: the momenta, grouped into stars,
+    the first of each being the one used for its sectors. ``sectors``: :class:`Sector`
+    objects. ``n_automorphisms``: order of the automorphism group of the bond
+    graph; more than ``len(permutations)`` means accidental symmetries.
+    ``better_supercell``: ``(periods, number of point operations)`` of another
+    matching supercell with more symmetry, or None.
     """
     lattice: str
     periods: tuple
@@ -506,7 +512,7 @@ class Symmetry:
         s = self.sector(label)
         n = len(self.sites)
         states = np.arange(2 ** n) if n_up is None else np.array(
-            [x for x in range(2 ** n) if bin(x).count('1') == n_up])
+            sorted(sum(1 << i for i in up) for up in combinations(range(n), n_up)), dtype=np.int64)
         p = np.zeros((len(states), len(states)), complex)
         columns = np.arange(len(states))
         weight = s.dim / len(s.elements)
@@ -560,7 +566,7 @@ class Symmetry:
                                             for c, (x, w) in enumerate(zip(r[:4], widths))) + '  ' + r[4])
         if n_up is not None:
             sizes = self.block_sizes(None if n_up == 'all' else n_up, spin_flip)
-            space = 'all 2^N states' if n_up == 'all' else f'{n_up} up spins'
+            space = 'all 2^N states' if n_up == 'all' else f'n_up = {n_up}'
             lines.append(f'  block sizes ({space}; each level is (star x dimension)-fold degenerate):')
             for star in self.stars:
                 labels = {x.label for x in self.sectors if x.momentum == star[0]}

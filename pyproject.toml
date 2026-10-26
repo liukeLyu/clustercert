@@ -20,6 +20,10 @@ dev = ["pytest>=7", "ruff>=0.5", "matplotlib", "nbclient", "ipykernel"]
 [project.scripts]
 clustercert = "clustercert.cli:main"
 
+[tool.pytest.ini_options]
+markers = ["slow: brute-force checks on larger Hilbert-space blocks (run with -m slow)"]
+addopts = "-m 'not slow'"
+
 [tool.ruff]
 line-length = 120
 
